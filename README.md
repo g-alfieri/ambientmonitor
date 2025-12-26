@@ -12,7 +12,7 @@ Estendi l'atmosfera del tuo gioco preferito sul secondo monitor con effetti ambi
 - 🌊 **Transizioni smooth**: Effetti fluidi con easing cubic per un'esperienza rilassante
 - ⚙️ **Altamente configurabile**: Personalizza intervalli, durata transizioni e intensità blur
 - 🖥️ **GUI moderna**: Interfaccia intuitiva con WebView2
-- 🔔 **System tray**: Resta in background senza disturbare
+- 🔔 **System tray**: Resta in background senza disturbare (per adesso si riduce a icona)
 - 🚀 **Performance ottimizzate**: Thread separati per cattura e rendering
 
 ## 📦 Installazione
