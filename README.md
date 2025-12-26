@@ -4,22 +4,23 @@
 
 ![Interface Preview](https://via.placeholder.com/800x400?text=Ambient+Monitor+GUI)
 
-## ✨ Funzionalità
+## ✨ Caratteristiche
 
-- **Cattura Real-Time**: Sincronizzazione istantanea con il monitor sorgente.
-- **Effetto Blur Gaussiano**: Crea un'atmosfera morbida e diffusa.
-- **Controlli Completi**:
-  - **FPS**: Regola la fluidità (da 10 a 60 FPS).
-  - **Blur**: Intensità della sfocatura.
-  - **Opacità**: Regolazione trasparenza in tempo reale.
-  - **Blend Mode**: Fusione avanzata con lo sfondo nero.
-- **Architettura Robusta**: Utilizza **Multiprocessing** per separare GUI, Cattura e Rendering, garantendo stabilità totale e zero crash (fix per errori Tkinter/Thread).
-- **GUI Moderna**: Interfaccia HTML/CSS pulita integrata tramite `pywebview`.
+- 🎮 **Perfetto per il gaming**: Cattura i colori dal monitor principale e li proietta sul secondo
+- 🌊 **Transizioni smooth**: Effetti fluidi con easing cubic per un'esperienza rilassante
+- ⚙️ **Altamente configurabile**: Personalizza intervalli, durata transizioni e intensità blur
+- 🖥️ **GUI moderna**: Interfaccia intuitiva con WebView2
+- 🔔 **System tray**: Resta in background senza disturbare (per adesso si riduce a icona)
+- 🚀 **Performance ottimizzate**: Thread separati per cattura e rendering
 
-## 📦 Requisiti
+## 📦 Installazione
 
-Assicurati di avere Python 3.x installato. Installa le dipendenze necessarie:
+### Download Release
+Scarica l'installer dalla [pagina releases](https://github.com/yourusername/ambient-monitor/releases)
 
+### Build da Sorgente
+
+1. Clona il repository:
 ```bash
 pip install pywebview mss numpy pillow
 ```
@@ -51,34 +52,82 @@ Per creare un file eseguibile standalone per Windows, utilizza **PyInstaller**.
    pip install pyinstaller
    ```
 
-2. Esegui il comando di build (assicurati di essere nella cartella del progetto):
+2. Build l'eseguibile:
+```bash
+python build.py
+```
 
-   ```bash
-   pyinstaller --noconfirm --onefile --windowed --name "AmbientMonitor" --add-data "gui.html;." ambient_monitor_app.py
-   ```
+3. Crea l'installer con Inno Setup:
+- Installa [Inno Setup](https://jrsoftware.org/isdl.php)
+- Compila `installer.iss`
 
-   *Nota: Se usi PowerShell, potresti dover mettere le virgolette diversamente o usare cmd.*
+## 🎯 Come Usare
 
-3. Troverai l'eseguibile nella cartella `dist/`.
+1. **Avvia l'applicazione** dal menu Start o desktop
+2. **Seleziona i monitor**:
+   - Monitor Sorgente: dove giochi (es. Monitor 1)
+   - Monitor Target: dove proiettare l'ambient (es. Monitor 2)
+3. **Configura i parametri**:
+   - **Intervallo Cattura**: ogni quanti secondi catturare i colori (1-10s)
+   - **Durata Transizione**: quanto dura il fade tra stati (1-10s)
+   - **Intensità Blur**: smoothness dell'effetto (50-200px)
+4. **Clicca Avvia** e goditi l'esperienza immersiva!
 
-## 🔧 Risoluzione Problemi Comuni
+### 💡 Consigli
 
-### Errori "Tcl_AsyncDelete" o Crash Tkinter
-Questa versione utilizza un'architettura a **Processi Separati** (Multiprocessing). Se riscontri crash legati ai thread, assicurati di usare l'ultima versione del codice che isola Tkinter nel suo processo dedicato.
+- **Per gaming intenso** (FPS, azione): `Intervallo 2s, Transizione 1.5s`
+- **Per RPG/Esplorazione** (Skyrim, Witcher): `Intervallo 4s, Transizione 3s`
+- **Per film/video**: `Intervallo 1s, Transizione 2s`
 
-### Errore "charmap codec" nell'EXE
-Se l'EXE crasha all'avvio con errori di Unicode/Encoding, è stato applicato un fix (`safe_print`) che gestisce correttamente i log su console Windows senza supporto UTF-8 completo.
+## 🖼️ Screenshot
 
-### Schermo nero o non aggiornato
-- Controlla di aver selezionato i monitor corretti.
-- Prova a disattivare/riattivare il "Blend Mode".
-- Verifica che l'opacità non sia a 0.
+*Aggiungi screenshot della GUI e dell'effetto ambient in azione*
+<img width="1736" height="759" alt="immagine" src="https://github.com/user-attachments/assets/d50e4244-cc34-41fa-92d2-340ebf4fc75e" />
+<img width="693" height="867" alt="immagine" src="https://github.com/user-attachments/assets/003197ff-a6a5-4f47-84da-b1d1c3457c05" />
 
-## 📝 Struttura File
+## ⚙️ Requisiti di Sistema
 
-- `ambient_monitor_app.py`: Logica principale, gestione processi e backend.
-- `gui.html`: Interfaccia utente frontend.
-- `README.md`: Questo file.
+- **OS**: Windows 10/11
+- **RAM**: 4GB minimo (8GB consigliati)
+- **Monitor**: Almeno 2 monitor
+- **Python**: 3.8+ (solo per build da sorgente)
 
-## ⚖️ Licenza
-Progetto Open Source. Sentiti libero di modificarlo e migliorarlo!
+## 🛠️ Tecnologie
+
+- **Python**: Core logic
+- **mss**: Screen capture veloce
+- **Pillow**: Elaborazione immagini
+- **NumPy**: Calcoli matematici ottimizzati
+- **PyWebView**: GUI con WebView2
+- **pystray**: System tray integration
+
+## 🤝 Contribuire
+
+Contributi, issues e feature requests sono benvenuti!
+
+1. Fork il progetto
+2. Crea il tuo feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit le modifiche (`git commit -m 'Add some AmazingFeature'`)
+4. Push al branch (`git push origin feature/AmazingFeature`)
+5. Apri una Pull Request
+
+## 📝 License
+
+Questo progetto è rilasciato sotto licenza MIT. Vedi `LICENSE` per dettagli.
+
+## 👤 Autore
+
+**Your Name**
+- GitHub: [@yourusername](https://github.com/yourusername)
+
+## ⭐ Supporto
+
+Se questo progetto ti è stato utile, lascia una ⭐!
+
+## 🐛 Bug Report
+
+Hai trovato un bug? [Apri una issue](https://github.com/yourusername/ambient-monitor/issues)
+
+---
+
+Made with ❤️ for immersive gaming
