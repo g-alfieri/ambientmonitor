@@ -75,6 +75,8 @@ python build.py
 ## 🖼️ Screenshot
 
 *Aggiungi screenshot della GUI e dell'effetto ambient in azione*
+<img width="1736" height="759" alt="immagine" src="https://github.com/user-attachments/assets/d50e4244-cc34-41fa-92d2-340ebf4fc75e" />
+<img width="693" height="867" alt="immagine" src="https://github.com/user-attachments/assets/003197ff-a6a5-4f47-84da-b1d1c3457c05" />
 
 ## ⚙️ Requisiti di Sistema
 
