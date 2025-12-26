@@ -1,8 +1,8 @@
 [Setup]
 AppName=Ambient Monitor
 AppVersion=1.0.0
-AppPublisher=YourName
-AppPublisherURL=https://github.com/yourusername/ambient-monitor
+AppPublisher=firelite91
+AppPublisherURL=https://github.com/g-alfieri/ambientmonitor
 DefaultDirName={autopf}\AmbientMonitor
 DefaultGroupName=Ambient Monitor
 OutputDir=installer
@@ -12,7 +12,7 @@ SolidCompression=yes
 WizardStyle=modern
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\AmbientMonitor.exe
-
+PrivilegesRequired=lowest
 [Languages]
 Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
