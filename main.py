@@ -1,22 +1,23 @@
 import numpy as np
 import mss
 import tkinter as tk
-from PIL import Image
-from collections import Counter
+from PIL import Image, ImageFilter
 import time
 
 class AmbientMonitor:
-    def __init__(self, source_monitor=1, target_monitor=2, update_rate=30):
+    def __init__(self, source_monitor=1, target_monitor=2, update_rate=30, blur_radius=100):
         """
         source_monitor: indice del monitor da catturare (1=principale)
         target_monitor: indice del monitor su cui proiettare i colori
         update_rate: aggiornamenti al secondo (FPS)
+        blur_radius: intensità del blur per smooth transitions
         """
         self.sct = mss.mss()
         self.source_monitor = source_monitor
         self.target_monitor = target_monitor
         self.update_rate = update_rate
         self.delay = 1.0 / update_rate
+        self.blur_radius = blur_radius
         
         # Ottieni informazioni sui monitor
         self.monitors = self.sct.monitors
@@ -40,9 +41,9 @@ class AmbientMonitor:
         self.root.geometry(f"{target['width']}x{target['height']}+{target['left']}+{target['top']}")
         self.root.attributes('-topmost', True)
         
-        # Canvas per i colori
-        self.canvas = tk.Canvas(self.root, highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        # Label per visualizzare l'immagine
+        self.label = tk.Label(self.root)
+        self.label.pack(fill=tk.BOTH, expand=True)
         
     def capture_screen(self):
         """Cattura screenshot del monitor principale"""
@@ -51,125 +52,129 @@ class AmbientMonitor:
         img = Image.frombytes('RGB', screenshot.size, screenshot.bgra, 'raw', 'BGRX')
         return img
     
-    def get_edge_colors(self, img, edge_width=50, zones=4):
+    def get_edge_colors(self, img, edge_width=100, samples=12):
         """
-        Estrae colori dai bordi dello schermo divisi in zone
-        zones: numero di zone per lato (top, bottom, left, right)
+        Estrae più colori dai bordi dello schermo
+        edge_width: larghezza bordo da campionare
+        samples: numero di campioni per lato
         """
         width, height = img.size
         img_array = np.array(img)
         
-        colors = {
-            'top': [],
-            'bottom': [],
-            'left': [],
-            'right': []
-        }
+        colors = []
+        positions = []
+        
+        sample_width = width // samples
+        sample_height = height // samples
         
         # Top edge
-        top_strip = img_array[:edge_width, :, :]
-        zone_width = width // zones
-        for i in range(zones):
-            zone = top_strip[:, i*zone_width:(i+1)*zone_width, :]
-            colors['top'].append(self.get_dominant_color(zone))
-        
-        # Bottom edge
-        bottom_strip = img_array[-edge_width:, :, :]
-        for i in range(zones):
-            zone = bottom_strip[:, i*zone_width:(i+1)*zone_width, :]
-            colors['bottom'].append(self.get_dominant_color(zone))
-        
-        # Left edge
-        left_strip = img_array[:, :edge_width, :]
-        zone_height = height // zones
-        for i in range(zones):
-            zone = left_strip[i*zone_height:(i+1)*zone_height, :, :]
-            colors['left'].append(self.get_dominant_color(zone))
+        for i in range(samples):
+            x = i * sample_width + sample_width // 2
+            zone = img_array[:edge_width, x-sample_width//2:x+sample_width//2, :]
+            color = np.mean(zone.reshape(-1, 3), axis=0).astype(int)
+            colors.append(tuple(color))
+            positions.append((x, 0))
         
         # Right edge
-        right_strip = img_array[:, -edge_width:, :]
-        for i in range(zones):
-            zone = right_strip[i*zone_height:(i+1)*zone_height, :, :]
-            colors['right'].append(self.get_dominant_color(zone))
+        for i in range(samples):
+            y = i * sample_height + sample_height // 2
+            zone = img_array[y-sample_height//2:y+sample_height//2, -edge_width:, :]
+            color = np.mean(zone.reshape(-1, 3), axis=0).astype(int)
+            colors.append(tuple(color))
+            positions.append((width, y))
         
-        return colors
+        # Bottom edge
+        for i in range(samples-1, -1, -1):
+            x = i * sample_width + sample_width // 2
+            zone = img_array[-edge_width:, x-sample_width//2:x+sample_width//2, :]
+            color = np.mean(zone.reshape(-1, 3), axis=0).astype(int)
+            colors.append(tuple(color))
+            positions.append((x, height))
+        
+        # Left edge
+        for i in range(samples-1, -1, -1):
+            y = i * sample_height + sample_height // 2
+            zone = img_array[y-sample_height//2:y+sample_height//2, :edge_width, :]
+            color = np.mean(zone.reshape(-1, 3), axis=0).astype(int)
+            colors.append(tuple(color))
+            positions.append((0, y))
+        
+        return colors, positions
     
-    def get_dominant_color(self, img_section):
-        """Calcola il colore medio di una sezione"""
-        avg_color = np.mean(img_section.reshape(-1, 3), axis=0).astype(int)
-        return tuple(avg_color)
-    
-    def rgb_to_hex(self, rgb):
-        """Converte RGB in formato HEX per Tkinter"""
-        return f'#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}'
-    
-    def draw_ambient(self, colors):
-        """Disegna l'effetto ambient sul canvas"""
-        self.canvas.delete('all')
+    def create_ambient_image(self, colors, positions):
+        """Crea un'immagine ambient con blur molto smooth"""
+        target = self.monitors[self.target_monitor]
+        width, height = target['width'], target['height']
         
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
+        # Scala ridotta per performance
+        scale = 4
+        small_width = width // scale
+        small_height = height // scale
         
-        if width <= 1 or height <= 1:
-            return
+        # Crea immagine con i colori posizionati
+        img_array = np.zeros((small_height, small_width, 3), dtype=np.float32)
+        weight_array = np.zeros((small_height, small_width), dtype=np.float32)
         
-        # Sfondo con colore medio generale
-        all_colors = []
-        for side in colors.values():
-            all_colors.extend(side)
-        avg_color = tuple(np.mean(all_colors, axis=0).astype(int))
-        self.canvas.configure(bg=self.rgb_to_hex(avg_color))
+        # Mappa i colori sulla griglia con interpolazione gaussiana
+        for (px, py), color in zip(positions, colors):
+            # Scala le posizioni
+            sx = int(px / scale)
+            sy = int(py / scale)
+            
+            # Raggio di influenza
+            radius = min(small_width, small_height) // 3
+            
+            # Crea griglia di coordinate
+            y_coords, x_coords = np.ogrid[:small_height, :small_width]
+            
+            # Calcola distanze dal punto
+            distances = np.sqrt((x_coords - sx)**2 + (y_coords - sy)**2)
+            
+            # Pesi gaussiani
+            weights = np.exp(-(distances**2) / (2 * (radius/2)**2))
+            
+            # Aggiungi colore pesato
+            for c in range(3):
+                img_array[:, :, c] += weights * color[c]
+            weight_array += weights
         
-        # Gradient dai bordi
-        edge_size = min(width, height) // 3
-        zones = len(colors['top'])
+        # Normalizza
+        for c in range(3):
+            img_array[:, :, c] /= np.maximum(weight_array, 1e-6)
         
-        # Top gradient
-        zone_width = width // zones
-        for i, color in enumerate(colors['top']):
-            x1 = i * zone_width
-            x2 = (i + 1) * zone_width
-            self.create_gradient(x1, 0, x2, edge_size, color, avg_color, 'vertical')
+        # Converti in immagine PIL
+        img_array = np.clip(img_array, 0, 255).astype(np.uint8)
+        ambient_img = Image.fromarray(img_array, 'RGB')
         
-        # Bottom gradient
-        for i, color in enumerate(colors['bottom']):
-            x1 = i * zone_width
-            x2 = (i + 1) * zone_width
-            self.create_gradient(x1, height - edge_size, x2, height, color, avg_color, 'vertical')
+        # Ridimensiona e applica blur pesante
+        ambient_img = ambient_img.resize((width, height), Image.LANCZOS)
+        ambient_img = ambient_img.filter(ImageFilter.GaussianBlur(radius=self.blur_radius))
         
-    def create_gradient(self, x1, y1, x2, y2, color1, color2, direction):
-        """Crea un gradiente tra due colori"""
-        steps = 20
-        
-        if direction == 'vertical':
-            step_height = (y2 - y1) / steps
-            for i in range(steps):
-                ratio = i / steps
-                r = int(color1[0] * (1 - ratio) + color2[0] * ratio)
-                g = int(color1[1] * (1 - ratio) + color2[1] * ratio)
-                b = int(color1[2] * (1 - ratio) + color2[2] * ratio)
-                
-                y_start = y1 + i * step_height
-                self.canvas.create_rectangle(
-                    x1, y_start, x2, y_start + step_height,
-                    fill=self.rgb_to_hex((r, g, b)), outline=''
-                )
+        return ambient_img
     
     def update(self):
         """Loop principale di aggiornamento"""
         try:
             # Cattura e analizza
             img = self.capture_screen()
-            colors = self.get_edge_colors(img)
+            colors, positions = self.get_edge_colors(img, edge_width=150, samples=16)
             
-            # Disegna ambient
-            self.draw_ambient(colors)
+            # Crea immagine ambient
+            ambient_img = self.create_ambient_image(colors, positions)
+            
+            # Converti per Tkinter
+            from PIL import ImageTk
+            photo = ImageTk.PhotoImage(ambient_img)
+            self.label.configure(image=photo)
+            self.label.image = photo  # Mantieni riferimento
             
             # Schedula prossimo aggiornamento
             self.root.after(int(self.delay * 1000), self.update)
             
         except Exception as e:
             print(f"Errore: {e}")
+            import traceback
+            traceback.print_exc()
             self.root.after(int(self.delay * 1000), self.update)
     
     def run(self):
@@ -178,6 +183,7 @@ class AmbientMonitor:
         print(f"Sorgente: Monitor {self.source_monitor}")
         print(f"Target: Monitor {self.target_monitor}")
         print(f"Update rate: {self.update_rate} FPS")
+        print(f"Blur radius: {self.blur_radius}")
         print("\nPremi Ctrl+C per terminare")
         
         # Aspetta che la finestra sia renderizzata
@@ -192,11 +198,12 @@ class AmbientMonitor:
 if __name__ == "__main__":
     # Installa dipendenze: pip install mss pillow numpy
     
-    # Configura i monitor (cambia gli indici se necessario)
+    # Configura i monitor
     ambient = AmbientMonitor(
-        source_monitor=1,  # Monitor principale (di solito 1)
-        target_monitor=2,  # Monitor secondario
-        update_rate=30     # FPS (abbassa se è troppo pesante)
+        source_monitor=1,      # Monitor principale
+        target_monitor=2,      # Monitor secondario
+        update_rate=30,        # FPS (abbassa a 20-25 se troppo pesante)
+        blur_radius=120        # Blur intensity (più alto = più smooth, 80-150 consigliato)
     )
     
     ambient.run()
