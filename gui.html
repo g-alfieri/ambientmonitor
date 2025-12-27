@@ -37,184 +37,115 @@
             font-size: 13px;
         }
         .slider-container { margin-bottom: 15px; }
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
-        }
-        .slider-value {
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 2px 8px;
-            border-radius: 5px;
-        }
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+        .slider-value { font-weight: bold; background: rgba(255, 255, 255, 0.2); padding: 2px 8px; border-radius: 5px; }
         input[type="range"] {
-            width: 100%;
-            height: 5px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.3);
-            outline: none;
-            -webkit-appearance: none;
+            width: 100%; height: 5px; border-radius: 5px;
+            background: rgba(255, 255, 255, 0.3); outline: none; -webkit-appearance: none;
         }
         input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
+            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; cursor: pointer;
         }
         .button-group { display: flex; gap: 10px; margin-top: 20px; }
         button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s;
         }
-        .btn-start {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .btn-start:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
+        .btn-start { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-start:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .btn-start:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn-stop { background: #f44336; color: white; }
-        .btn-stop:hover:not(:disabled) {
-            background: #d32f2f;
-            transform: translateY(-2px);
-        }
-        .status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 13px;
-        }
+        .btn-stop:hover:not(:disabled) { background: #d32f2f; transform: translateY(-2px); }
+        .status { margin-top: 15px; padding: 10px; border-radius: 8px; text-align: center; font-weight: 600; font-size: 13px; }
         .status.running { background: rgba(76, 175, 80, 0.3); }
         .status.stopped { background: rgba(244, 67, 54, 0.3); }
-        .monitor-info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 11px;
-        }
+        .monitor-info { background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 11px; }
         .checkbox-group { margin-bottom: 15px; }
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            font-size: 13px;
-        }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
         input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .hotkey-hint { text-align: center; margin-top: 10px; font-size: 11px; opacity: 0.6; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🌈 Ambient Monitor</h1>
         <p class="subtitle">Estendi l'atmosfera sul secondo monitor</p>
-
+        
         <div class="monitor-info" id="monitorInfo">Caricamento...</div>
-
+        
+        <!-- Controls -->
         <div class="control-group">
             <label for="sourceMonitor">Monitor Sorgente (Gaming)</label>
-            <select id="sourceMonitor">
-                <option value="1">Monitor 1</option>
-                <option value="2">Monitor 2</option>
-            </select>
+            <select id="sourceMonitor"><option value="1">Monitor 1</option><option value="2">Monitor 2</option></select>
         </div>
-
         <div class="control-group">
             <label for="targetMonitor">Monitor Target (Ambient)</label>
-            <select id="targetMonitor">
-                <option value="1">Monitor 1</option>
-                <option value="2" selected>Monitor 2</option>
-            </select>
+            <select id="targetMonitor"><option value="1">Monitor 1</option><option value="2" selected>Monitor 2</option></select>
         </div>
-
         <div class="slider-container">
-            <div class="slider-label">
-                <label>FPS (Aggiornamenti al secondo)</label>
-                <span class="slider-value"><span id="fpsValue">30</span></span>
-            </div>
-            <input type="range" id="updateRate" min="0.01" max="60" step="0.01" value="30">
-            <div style="font-size: 10px; opacity: 0.7; margin-top: 3px;">
-                10-20: Risparmia CPU | 30: Bilanciato | 60: Max fluidità
-            </div>
+            <div class="slider-label"><label>FPS</label><span class="slider-value" id="fpsValue">30</span></div>
+            <input type="range" id="updateRate" min="10" max="60" step="5" value="30">
         </div>
-
         <div class="slider-container">
-            <div class="slider-label">
-                <label>Intensità Blur</label>
-                <span class="slider-value"><span id="blurValue">120</span>px</span>
-            </div>
+            <div class="slider-label"><label>Blur</label><span class="slider-value" id="blurValue">120</span>px</div>
             <input type="range" id="blurRadius" min="50" max="200" step="10" value="120">
         </div>
-
         <div class="slider-container">
-            <div class="slider-label">
-                <label>Opacità</label>
-                <span class="slider-value"><span id="opacityValue">70</span>%</span>
-            </div>
+            <div class="slider-label"><label>Opacità</label><span class="slider-value" id="opacityValue">70</span>%</div>
             <input type="range" id="opacity" min="10" max="100" step="5" value="70">
         </div>
-
         <div class="checkbox-group">
             <label class="checkbox-label">
-                <input type="checkbox" id="blendMode" checked>
-                <span>Fusione con sfondo (stile Photoshop)</span>
+                <input type="checkbox" id="blendMode" checked> <span>Fusione sfondo (Blend)</span>
             </label>
         </div>
-
+        
         <div class="button-group">
             <button class="btn-start" id="startBtn" onclick="startAmbient()">▶ Avvia</button>
             <button class="btn-stop" id="stopBtn" onclick="stopAmbient()" disabled>■ Stop</button>
         </div>
-
+        
         <div class="status stopped" id="status">⏹ Non attivo</div>
+        <div class="hotkey-hint">Hotkey Globale: <strong>CTRL + SHIFT + A</strong></div>
     </div>
-
+    
     <script>
-        // Update sliders
-        document.getElementById('updateRate').addEventListener('input', e => {
-            document.getElementById('fpsValue').textContent = e.target.value;
-        });
-        document.getElementById('blurRadius').addEventListener('input', e => {
-            document.getElementById('blurValue').textContent = e.target.value;
-        });
-        document.getElementById('opacity').addEventListener('input', e => {
-            document.getElementById('opacityValue').textContent = e.target.value;
+        // UI Helpers
+        const setIds = ['updateRate', 'blurRadius', 'opacity'];
+        setIds.forEach(id => {
+            const valId = id === 'updateRate' ? 'fpsValue' : (id === 'blurRadius' ? 'blurValue' : 'opacityValue');
+            document.getElementById(id).addEventListener('input', e => document.getElementById(valId).textContent = e.target.value);
         });
 
-        // Load monitors
+        // External control (from Python Hotkey)
+        function onExternalStart() {
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('status').className = 'status running';
+            document.getElementById('status').textContent = '▶ Attivo (Hotkey)';
+            // Re-sync current config to UI logic if needed
+        }
+
+        function onExternalStop() {
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('status').className = 'status stopped';
+            document.getElementById('status').textContent = '⏹ Fermato (Hotkey)';
+        }
+
+        // Logic
         window.addEventListener('pywebviewready', async function() {
-            console.log('✓ pywebview ready');
             try {
                 const monitors = await pywebview.api.get_monitors();
                 let info = '<strong>Monitor disponibili:</strong> ';
                 let count = 0;
                 monitors.forEach((mon, idx) => {
-                    if (idx > 0) {
-                        info += `${idx}: ${mon.width}x${mon.height} | `;
-                        count++;
-                    }
+                    if (idx > 0) { info += `${idx}: ${mon.width}x${mon.height} | `; count++; }
                 });
                 document.getElementById('monitorInfo').innerHTML = count > 0 ? info : 'Nessun monitor';
-            } catch(e) {
-                console.error('Error loading monitors:', e);
-                document.getElementById('monitorInfo').innerHTML = 'Errore caricamento monitor';
-            }
+            } catch(e) { document.getElementById('monitorInfo').innerHTML = 'Errore monitor'; }
         });
-
+        
         async function startAmbient() {
             const config = {
                 source_monitor: parseInt(document.getElementById('sourceMonitor').value),
@@ -224,26 +155,17 @@
                 opacity: parseInt(document.getElementById('opacity').value),
                 blend_mode: document.getElementById('blendMode').checked
             };
-
-            console.log('▶ Starting with config:', config);
-
             try {
                 const result = await pywebview.api.startAmbient(JSON.stringify(config));
                 if (result.success) {
                     document.getElementById('startBtn').disabled = true;
                     document.getElementById('stopBtn').disabled = false;
                     document.getElementById('status').className = 'status running';
-                    document.getElementById('status').textContent = '▶ Attivo - Cattura in tempo reale';
-                    console.log('✓ Started successfully');
-                } else {
-                    alert('Errore avvio: ' + result.error);
-                }
-            } catch(e) {
-                console.error('Start error:', e);
-                alert('Errore avvio: ' + e);
-            }
+                    document.getElementById('status').textContent = '▶ Attivo';
+                } else { alert('Error: ' + result.error); }
+            } catch(e) { alert('Error: ' + e); }
         }
-
+        
         async function stopAmbient() {
             try {
                 await pywebview.api.stopAmbient();
@@ -251,10 +173,7 @@
                 document.getElementById('stopBtn').disabled = true;
                 document.getElementById('status').className = 'status stopped';
                 document.getElementById('status').textContent = '⏹ Non attivo';
-                console.log('✓ Stopped');
-            } catch(e) {
-                console.error('Stop error:', e);
-            }
+            } catch(e) {}
         }
     </script>
 </body>

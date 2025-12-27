@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Ambient Monitor - Unicode Safe"""
+"""Ambient Monitor - Hotkey Edition"""
 from __future__ import annotations
 import sys
 import os
@@ -8,7 +8,7 @@ import time
 import multiprocessing
 from multiprocessing import Process, Queue, Event
 
-# --- Force UTF-8 where possible (Windows) ---
+# --- Force UTF-8 where possible ---
 try:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -21,31 +21,34 @@ import mss
 import numpy as np
 from PIL import Image, ImageFilter, ImageTk
 
+# Librerie Opzionali
 try:
     import webview
     WEBVIEW_AVAILABLE = True
 except ImportError:
     WEBVIEW_AVAILABLE = False
 
+try:
+    import keyboard
+    KEYBOARD_AVAILABLE = True
+except ImportError:
+    KEYBOARD_AVAILABLE = False
 
 def safe_print(*args, **kwargs):
-    """Stampa sicura che evita crash Unicode su Windows console."""
     try:
         print(*args, **kwargs)
     except UnicodeEncodeError:
         try:
-            # Fallback: encode/decode per rimuovere caratteri non supportati
             text = ' '.join(str(a) for a in args)
-            end_char = kwargs.get('end', '\n')
+            end_char = kwargs.get('end', '\\n')
             clean_text = text.encode('ascii', 'replace').decode('ascii') + end_char
             sys.stdout.write(clean_text)
         except Exception:
             pass
 
-
+# --- PROCESSO OVERLAY (Invariato) ---
 def overlay_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
     import tkinter as tk
-
     try:
         initial_config = config_queue.get()
         target_idx = int(initial_config.get('target_monitor', 2))
@@ -53,7 +56,6 @@ def overlay_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
         with mss.mss() as sct:
             monitors = list(sct.monitors)
             if target_idx >= len(monitors):
-                safe_print(f"Overlay: target monitor {target_idx} not found")
                 return
             target = monitors[target_idx]
 
@@ -83,12 +85,9 @@ def overlay_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
 
         def check_updates():
             if stop_event.is_set():
-                try:
-                    root.destroy()
-                finally:
-                    return
+                root.destroy()
+                return
 
-            # Config updates
             try:
                 while not config_queue.empty():
                     new_conf = config_queue.get_nowait()
@@ -98,7 +97,6 @@ def overlay_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
             except Exception:
                 pass
 
-            # Image updates
             try:
                 last_img = None
                 while not img_queue.empty():
@@ -116,11 +114,10 @@ def overlay_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
 
         root.after(100, check_updates)
         root.mainloop()
-
     except Exception as e:
-        safe_print("Overlay process error:", e)
+        safe_print("Overlay error:", e)
 
-
+# --- PROCESSO CATTURA (Invariato) ---
 def capture_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
     try:
         config = config_queue.get()
@@ -137,8 +134,6 @@ def capture_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
 
             while not stop_event.is_set():
                 start_t = time.time()
-
-                # Config updates
                 try:
                     while not config_queue.empty():
                         new_c = config_queue.get_nowait()
@@ -149,7 +144,6 @@ def capture_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
 
                 sct_img = sct.grab(source)
                 img = Image.frombytes('RGB', sct_img.size, sct_img.bgra, 'raw', 'BGRX')
-
                 small = img.resize((32, 32), Image.BILINEAR)
                 ambient = small.resize((max(1, t_w // 10), max(1, t_h // 10)), Image.BICUBIC)
                 blurred = ambient.filter(ImageFilter.GaussianBlur(radius=max(1, blur // 10)))
@@ -160,9 +154,8 @@ def capture_process(img_queue: Queue, config_queue: Queue, stop_event: Event):
 
                 elapsed = time.time() - start_t
                 time.sleep(max(0, (1.0 / max(1, fps)) - elapsed))
-
     except Exception as e:
-        safe_print("Capture process error:", e)
+        safe_print("Capture error:", e)
 
 
 class AmbientMonitorApp:
@@ -170,11 +163,18 @@ class AmbientMonitorApp:
         self.p_overlay: Process | None = None
         self.p_capture: Process | None = None
         self.stop_event: Event | None = None
+        self.window = None  # Reference to pywebview window
 
         self.img_queue: Queue | None = None
         self.conf_queue_overlay: Queue | None = None
         self.conf_queue_capture: Queue | None = None
-        self.current_config: dict = {}
+        
+        # Default config in case hotkey is pressed before GUI load
+        self.current_config: dict = {
+            "source_monitor": 1, "target_monitor": 2,
+            "update_rate": 30, "blur_radius": 120,
+            "opacity": 70, "blend_mode": True
+        }
 
         with mss.mss() as sct:
             self.monitors = list(sct.monitors)
@@ -184,21 +184,29 @@ class AmbientMonitorApp:
 
     def startAmbient(self, config_str):
         try:
-            new_config = json.loads(config_str)
+            if isinstance(config_str, str):
+                new_config = json.loads(config_str)
+            else:
+                new_config = config_str
+                
             new_config['opacity'] = new_config.get('opacity', 70) / 100.0
+            
+            # Save for hotkey restart
+            self.current_config = new_config
 
             if self.p_overlay and self.p_overlay.is_alive():
+                # If monitors changed, full restart
                 if (new_config.get('source_monitor') != self.current_config.get('source_monitor') or
                         new_config.get('target_monitor') != self.current_config.get('target_monitor')):
                     self.stopAmbient()
                 else:
+                    # Live update
                     self.conf_queue_overlay.put(new_config)
                     self.conf_queue_capture.put(new_config)
-                    self.current_config = new_config
                     return {"success": True}
 
             self.stopAmbient()
-            self.current_config = new_config
+            self.current_config = new_config # Update saved config
 
             self.img_queue = Queue(maxsize=2)
             self.conf_queue_overlay = Queue()
@@ -216,7 +224,7 @@ class AmbientMonitorApp:
 
             return {"success": True}
         except Exception as e:
-            safe_print("startAmbient error:", e)
+            safe_print("Start error:", e)
             return {"success": False, "error": str(e)}
 
     def stopAmbient(self):
@@ -234,23 +242,51 @@ class AmbientMonitorApp:
         self.stop_event = None
         return {"success": True}
 
+    def toggle_ambient(self):
+        """Called by Hotkey"""
+        safe_print("Hotkey pressed!")
+        if self.p_overlay and self.p_overlay.is_alive():
+            # Stop
+            self.stopAmbient()
+            # Update GUI JS
+            if self.window:
+                self.window.evaluate_js("onExternalStop()")
+        else:
+            # Start
+            self.startAmbient(self.current_config)
+            # Update GUI JS
+            if self.window:
+                self.window.evaluate_js("onExternalStart()")
+
     def run(self):
         if not WEBVIEW_AVAILABLE:
             safe_print('pywebview is required')
             return
 
         multiprocessing.freeze_support()
+        
+        # Setup Hotkey
+        if KEYBOARD_AVAILABLE:
+            # HOTKEY DEFINITION
+            hotkey = 'ctrl+shift+a'
+            try:
+                keyboard.add_hotkey(hotkey, self.toggle_ambient)
+                safe_print(f"Hotkey active: {hotkey}")
+            except Exception as e:
+                safe_print(f"Hotkey failed: {e}")
+        else:
+            safe_print("Keyboard module not found. Hotkey disabled.")
 
         html_path = os.path.join(os.path.dirname(__file__), 'gui.html')
-        window = webview.create_window('Ambient Monitor', html_path, width=550, height=680)
+        self.window = webview.create_window('Ambient Monitor', html_path, width=550, height=700)
 
         def on_start():
-            window.expose(self.get_monitors, self.startAmbient, self.stopAmbient)
+            self.window.expose(self.get_monitors, self.startAmbient, self.stopAmbient)
 
         webview.start(on_start, debug=False)
 
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    safe_print('Ambient Monitor (Safe)')
+    safe_print('Ambient Monitor (Hotkey Edition)')
     AmbientMonitorApp().run()
