@@ -118,7 +118,7 @@ Questo progetto è rilasciato sotto licenza MIT. Vedi `LICENSE` per dettagli.
 ## 👤 Autore
 
 **Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
+- GitHub: [@galfieri](https://github.com/g-alfieri)
 
 ## ⭐ Supporto
 
